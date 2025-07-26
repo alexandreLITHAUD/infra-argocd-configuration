@@ -2,63 +2,63 @@ global:
   templates:
     - |
       {{- range $key, $value := .Values.projects }}
-        {{- $project := $value -}}
-        ---
-        apiVersion: argoproj.io/v1alpha1
-        kind: AppProject
-        metadata:
-          name: {{ $value.projectName }}
-          finalizers:
-            - resources-finalizer.argocd.argoproj.io
-        spec:
-          sourceRepos:
-            - '*'
-          destinations:
-            - namespace: {{ coalesce $value.destinationNamespace "*" | quote }}
-              server: {{ coalesce $value.server "https://kubernetes.default.svc" | quote }}
-          clusterResourceWhitelist: {{ toYaml $value.clusterResourceWhitelist | nindent 4 }}
-        {{- range $key, $value := $value.applications }}
-        ---
-        apiVersion: argoproj.io/v1alpha1
-        kind: Application
-        metadata:
-          name: {{ $key | lower }}-{{ $project.projectName | lower }}
-          finalizers:
-            - resources-finalizer.argocd.argoproj.io
-        spec:
-          project: {{ $project.projectName | quote }}
-          destinations:
-            - namespace: {{ coalesce $value.namespace $project.destinationNamespace $key | lower }}
-              server: {{ coalesce $project.server "https://kubernetes.default.svc" | quote }}
-          source:
-            repoURL: {{ $value.repo.repoURL | quote }}
-            path: {{ coalesce $value.repo.path "." | quote }}
-            plugin:
-              name: helmfile
-            {{- if or $value.helmfileEnv $project.helmfileEnv }}
-              env:
-                - name: HELMFILE_ENVIRONMENT
-                  value: {{ coalesce $value.helmfileEnv $project.helmfileEnv | lower }}
-                - name: HELMFILE_TEMPLATE_OPTIONS
-                  value: '--include-crds'
-                - name: HELM_TEMPLATE_OPTIONS
-                  value: '--skip-tests'
+      {{- $project := $value -}}
+      ---
+      apiVersion: argoproj.io/v1alpha1
+      kind: AppProject
+      metadata:
+        name: {{ $value.projectName }}
+        finalizers:
+          - resources-finalizer.argocd.argoproj.io
+      spec:
+        sourceRepos:
+          - '*'
+        destinations:
+          - namespace: {{ coalesce $value.destinationNamespace "*" | quote }}
+            server: {{ coalesce $value.server "https://kubernetes.default.svc" | quote }}
+        clusterResourceWhitelist: {{ toYaml $value.clusterResourceWhitelist | nindent 6 }}
+      {{- range $key, $value := $value.applications }}
+      ---
+      apiVersion: argoproj.io/v1alpha1
+      kind: Application
+      metadata:
+        name: {{ $key | lower }}-{{ $project.projectName | lower }}
+        finalizers:
+          - resources-finalizer.argocd.argoproj.io
+      spec:
+        project: {{ $project.projectName | quote }}
+        destination:
+          namespace: {{ coalesce $value.namespace $project.destinationNamespace $key | lower }}
+          server: {{ coalesce $project.server "https://kubernetes.default.svc" | quote }}
+        source:
+          repoURL: {{ $value.repo.repoURL | quote }}
+          path: {{ coalesce $value.repo.path "." | quote }}
+          plugin:
+            name: helmfile
+          {{- if or $value.helmfileEnv $project.helmfileEnv }}
+            env:
+              - name: HELMFILE_ENVIRONMENT
+                value: {{ coalesce $value.helmfileEnv $project.helmfileEnv | lower }}
+              - name: HELMFILE_TEMPLATE_OPTIONS
+                value: '--include-crds'
+              - name: HELM_TEMPLATE_OPTIONS
+                value: '--skip-tests'
+          {{- end }}
+          targetRevision: {{ coalesce $value.targetRevision "main" }}
+        syncPolicy:
+        {{- if $value.syncPolicy }}
+          {{- toYaml $value.syncPolicy | nindent 6 }}
+        {{- else }}
+          automated:
+            prune: true
+            selfHeal: true
+          syncOptions:
+            - CreateNamespace=true
+            {{- if $value.extraSyncOptions }}
+            {{- range $option := $value.extraSyncOptions }}
+            - {{ $option | quote }}
             {{- end }}
-            targetRevision: {{ coalesce $value.targetRevision "main" }}
-          syncPolicy:
-          {{- if $value.syncPolicy }}
-            {{- toYaml $value.syncPolicy | nindent 6 }}
-          {{- else }}
-            automated:
-              prune: true
-              selfHeal: true
-            syncOptions:
-              - CreateNamespace=true
-              {{- if $value.extraSyncOptions }}
-              {{- range $option := $value.extraSyncOptions }}
-              - {{ $option | quote }}
-              {{- end }}
-              {{- end }}
             {{- end }}
         {{- end }}
+      {{- end }}
       {{- end }}

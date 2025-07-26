@@ -1,0 +1,18 @@
+repositories:
+  - name: perso
+    url: https://alexandrelithaud.github.io/personal-useful-helm-charts/
+bases:
+  - environments.yaml
+---
+templates:
+  default:
+    missingFileHandler: Error
+    values:
+      - values.yaml.gotmpl
+releases:
+  - name: argocd-configuration
+    namespace: argocd
+    chart: perso/k8s-raw-configuration
+    version: "0.1.0"
+    inherit:
+      - template: default

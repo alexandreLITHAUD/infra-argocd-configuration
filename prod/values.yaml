@@ -1,0 +1,17 @@
+argocd-configuration-prod:
+  projects:
+    k8s-apps-deployment-prod:
+      projectName: prod
+      helmfileEnv: prod
+      server: https://kubernetes.default.svc
+      targetRevision: main
+      clusterResourceWhitelist:
+        - group: "*"
+          kind: "*"
+      applications:
+        monitoring:
+          namespace: monitoring
+          targetRevision: main
+          repo:
+            repoURL: https://github.com/alexandreLITHAUD/infra-monitoring
+            path: .

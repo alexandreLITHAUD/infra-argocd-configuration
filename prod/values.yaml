@@ -15,3 +15,9 @@ argocd-configuration-prod:
           repo:
             repoURL: https://github.com/alexandreLITHAUD/infra-monitoring
             path: .
+        redis:
+          namespace: redis
+          targetRevision: main
+          repo:
+            repoURL: https://github.com/alexandreLITHAUD/infra-redis-db
+            path: .
